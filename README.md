@@ -1,0 +1,1 @@
+mysql -u app -ppassword1 -D app -e "TRUNCATE auth_codes; TRUNCATE cards; TRUNCATE card_transactions; DELETE FROM users;"
