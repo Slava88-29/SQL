@@ -20,9 +20,12 @@ dependencies {
     testImplementation 'com.codeborne:selenide:6.17.2'
     testImplementation 'com.github.javafaker:javafaker:1.0.2'
     testImplementation 'mysql:mysql-connector-java:8.0.30'
+    testImplementation 'commons-dbutils:commons-dbutils:1.8.1'
+    testImplementation 'com.zaxxer:HikariCP:5.0.1'
 }
 
 test {
     useJUnitPlatform()
     systemProperty 'selenide.headless', System.getProperty('selenide.headless')
+    systemProperty "chromeoptions.prefs", "profile.password_manager_leak_detection=false"
 }

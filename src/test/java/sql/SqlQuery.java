@@ -1,46 +1,66 @@
 package sql;
 
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
+import org.apache.commons.dbutils.QueryRunner;
+import org.apache.commons.dbutils.handlers.ScalarHandler;
+
+import javax.sql.DataSource;
 import java.sql.*;
+import java.util.concurrent.TimeUnit;
+
+class DatabaseConfig {
+    private static DataSource dataSource;
+
+    public static DataSource getDataSource() {
+        if (dataSource == null) {
+            HikariConfig config = new HikariConfig();
+            config.setJdbcUrl("jdbc:mysql://localhost:3306/app");
+            config.setUsername("app");
+            config.setPassword("password1");
+            config.setMaximumPoolSize(10);
+
+            dataSource = new HikariDataSource(config);
+        }
+        return dataSource;
+    }
+}
 
 public class SqlQuery {
-    public static final String JDBC_URL = "jdbc:mysql://localhost:3306/app";
-    public static final String DB_USER = "app";
-    public static final String DB_PASSWORD = "password1";
+    public static String getValidCode() {
+        QueryRunner queryRunner = new QueryRunner(DatabaseConfig.getDataSource());
+        String sql = "SELECT code FROM auth_codes ORDER BY created DESC LIMIT 1";
 
-    public String getValidCode() {
-        Connection conn = null;
-        Statement stmt = null;
-        ResultSet rs = null;
         try {
-            String queryStr = "SELECT code FROM auth_codes order by created desc limit 1";
+            TimeUnit.MILLISECONDS.sleep(500);
 
-            conn = DriverManager.getConnection(JDBC_URL, DB_USER, DB_PASSWORD);
-            stmt = conn.createStatement();
-            rs = stmt.executeQuery(queryStr);
-            while (rs.next()) {
-                String getCode = rs.getString(1);
-                System.out.println("returnCode = " + getCode);
-                return getCode;
-            }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        } finally {
-            if (rs != null) {
-                try {
-                    rs.close();
-                } catch (SQLException e) { /* Ignored */}
-            }
-            if (stmt != null) {
-                try {
-                    stmt.close();
-                } catch (SQLException e) { /* Ignored */}
-            }
-            if (conn != null) {
-                try {
-                    conn.close();
-                } catch (SQLException e) { /* Ignored */}
-            }
+            String code = queryRunner.query(sql, new ScalarHandler<>());
+            System.out.println("returnCode = " + code);
+            return code;
+        } catch (SQLException e) {
+            throw new RuntimeException("Error retrieving valid code", e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Operation was interrupted", e);
         }
-        return null;
+    }
+
+    public static void clearDB() {
+        QueryRunner queryRunner = new QueryRunner(DatabaseConfig.getDataSource());
+        String[] queries = {
+                "TRUNCATE auth_codes",
+                "TRUNCATE cards",
+                "TRUNCATE card_transactions",
+                "DELETE FROM users"
+        };
+
+        try {
+            for (String query : queries) {
+                queryRunner.update(query);
+            }
+            System.out.println("Database cleared successfully.");
+        } catch (SQLException e) {
+            System.err.println("Error clearing database: " + e.getMessage());
+        }
     }
 }

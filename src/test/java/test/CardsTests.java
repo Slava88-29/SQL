@@ -1,6 +1,7 @@
 package test;
 
 import models.User;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -8,6 +9,7 @@ import pages.DashboardPage;
 import pages.LoginPage;
 import pages.VerifyPage;
 import sql.SqlQuery;
+import utlis.DataHelper;
 
 import java.util.Random;
 
@@ -17,19 +19,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class CardsTest {
     // спецификация нужна для того, чтобы переиспользовать настройки в разных запросах
 
-    public User user = new User("vasya", "qwerty123");
-
-    @BeforeEach
-    void setup() {
-        System.setProperty("chromeoptions.prefs", "profile.password_manager_leak_detection=false");
-    }
+    public User user = DataHelper.getUser();
 
     @Test
     @DisplayName("Успешный вход в систему")
     void shouldLoginAndVerify() {
         new LoginPage().loginIn(user);
-        SqlQuery query = new SqlQuery();
-        String code = query.getValidCode();
+        String code = SqlQuery.getValidCode();
         new VerifyPage().verifyIn(code);
 
         DashboardPage dashboardPage = new DashboardPage();
@@ -49,5 +45,10 @@ class CardsTest {
         login.loginIn(user).checkErrorNotification();
 
         login.checkDisable();
+    }
+
+    @AfterAll
+    static void clearDB() {
+        SqlQuery.clearDB();
     }
 }
